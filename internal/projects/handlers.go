@@ -8,25 +8,13 @@ import (
 	"github.com/soft4dev/clonei/internal/color"
 )
 
-func GetAvailableProjectTypes() []string {
-	types := make([]string, 0, len(ProjectHandlers))
-	for k := range ProjectHandlers {
-		types = append(types, k)
-	}
-	return types
-}
-
 type ProjectHandler interface {
 	Install(projectDir string) error
 }
 
-var ProjectHandlers = map[string]ProjectHandler{
-	"NPM":  npmHandler{},
-	"PNPM": pnpmHandler{},
-}
-
 type npmHandler struct{}
 type pnpmHandler struct{}
+type cargoHandler struct{}
 
 func (n npmHandler) Install(projectDir string) error {
 	// check npm command exists
@@ -46,6 +34,7 @@ func (n npmHandler) Install(projectDir string) error {
 
 	return nil
 }
+
 func (n pnpmHandler) Install(projectDir string) error {
 	// check pnpm command exists
 	if _, err := exec.LookPath("pnpm"); err != nil {
@@ -62,5 +51,9 @@ func (n pnpmHandler) Install(projectDir string) error {
 		return fmt.Errorf("error initializing project (pnpm install): %w", err)
 	}
 
+	return nil
+}
+
+func (self cargoHandler) Install(prjectDir string) error {
 	return nil
 }
