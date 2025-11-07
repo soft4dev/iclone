@@ -35,12 +35,12 @@ func (mavenProject *MavenProject) Name() string {
 	return "maven"
 }
 
-func (mavenProject *MavenProject) Detect(projectPath string) (IProjectHandler, error) {
+func (mavenProject *MavenProject) Detect(projectPath string) IProjectHandler {
 	mavenProjectConfigPath := filepath.Join(projectPath, "pom.xml")
 	if _, err := os.Stat(mavenProjectConfigPath); err == nil {
-		return &mavenProjectHandler{}, nil
+		return &mavenProjectHandler{}
 	}
-	return nil, nil
+	return nil
 }
 
 func (mavenProject *MavenProject) ProjectHandler() IProjectHandler {

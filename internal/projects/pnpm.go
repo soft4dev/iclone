@@ -36,12 +36,12 @@ func (pnpmProject *PnpmProject) Name() string {
 	return "pnpm"
 }
 
-func (pnpmProject *PnpmProject) Detect(projectPath string) (IProjectHandler, error) {
+func (pnpmProject *PnpmProject) Detect(projectPath string) IProjectHandler {
 	pnpmLockPath := filepath.Join(projectPath, "pnpm-lock.yaml")
 	if _, err := os.Stat(pnpmLockPath); err == nil {
-		return pnpmProjectHandler{}, nil
+		return pnpmProjectHandler{}
 	}
-	return nil, nil
+	return nil
 }
 
 func (pnpmProject *PnpmProject) ProjectHandler() IProjectHandler {

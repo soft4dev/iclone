@@ -6,7 +6,7 @@ import (
 
 type Project interface {
 	Name() string
-	Detect(projectPath string) (projects.IProjectHandler, error)
+	Detect(projectPath string) projects.IProjectHandler
 	ProjectHandler() projects.IProjectHandler
 }
 
@@ -17,17 +17,14 @@ type ProjectDetector struct {
 // It tries to detect the project type automatically
 // based on the given project path. It returns the corresponding handler
 // if one is found, or nil if no type matches.
-func (projectDetector *ProjectDetector) FindProjectHandlerAuto(projectPath string) (projects.IProjectHandler, error) {
-	for _, projectType := range projectDetector.projects {
-		projectHandler, err := projectType.Detect(projectPath)
-		if err != nil {
-			return nil, err
-		}
+func (projectDetector *ProjectDetector) FindProjectHandlerAuto(projectPath string) projects.IProjectHandler {
+	for _, project := range projectDetector.projects {
+		projectHandler := project.Detect(projectPath)
 		if projectHandler != nil {
-			return projectHandler, nil
+			return projectHandler
 		}
 	}
-	return nil, nil
+	return nil
 }
 
 // It returns a default handler for the given project type name.

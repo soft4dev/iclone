@@ -35,12 +35,12 @@ func (goProject *GoProject) Name() string {
 	return "go"
 }
 
-func (goProject *GoProject) Detect(projectPath string) (IProjectHandler, error) {
+func (goProject *GoProject) Detect(projectPath string) IProjectHandler {
 	goProjectConfigPath := filepath.Join(projectPath, "go.mod")
 	if _, err := os.Stat(goProjectConfigPath); err == nil {
-		return &goProjectHandler{}, nil
+		return &goProjectHandler{}
 	}
-	return nil, nil
+	return nil
 }
 
 func (goProject *GoProject) ProjectHandler() IProjectHandler {

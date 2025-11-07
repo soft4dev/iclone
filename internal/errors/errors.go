@@ -1,37 +1,27 @@
 package errors
 
-import "fmt"
+type messageType string
+
+const (
+	ErrorTypeError   = "error"
+	ErrorTypeWarning = "warning"
+	ErrorTypeInfo    = "info"
+)
 
 type CustomError struct {
-	Err       error
-	ShowUsage bool
+	message     string
+	ShowUsage   bool
+	MessageType messageType
+}
+
+func NewCustomError(msg string, errorType messageType, showUsage bool) *CustomError {
+	return &CustomError{
+		message:     msg,
+		MessageType: errorType,
+		ShowUsage:   showUsage,
+	}
 }
 
 func (e *CustomError) Error() string {
-	return e.Err.Error()
-}
-
-func (e *CustomError) Unwrap() error {
-	return e.Err
-}
-
-func NewCustomError(msg string, args ...any) *CustomError {
-	return &CustomError{
-		Err:       fmt.Errorf(msg, args...),
-		ShowUsage: true,
-	}
-}
-
-func NewCustomErrorWithoutUsage(msg string, args ...any) *CustomError {
-	return &CustomError{
-		Err:       fmt.Errorf(msg, args...),
-		ShowUsage: false,
-	}
-}
-
-func ShouldShowUsage(err error) bool {
-	if cmdErr, ok := err.(*CustomError); ok {
-		return cmdErr.ShowUsage
-	}
-	return true
+	return e.message
 }

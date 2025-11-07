@@ -35,12 +35,12 @@ func (cargoProject *CargoProject) Name() string {
 	return "cargo"
 }
 
-func (cargoProject *CargoProject) Detect(projectPath string) (IProjectHandler, error) {
+func (cargoProject *CargoProject) Detect(projectPath string) IProjectHandler {
 	cargoProjectConfigPath := filepath.Join(projectPath, "Cargo.toml")
 	if _, err := os.Stat(cargoProjectConfigPath); err == nil {
-		return &cargoProjectHandler{}, nil
+		return &cargoProjectHandler{}
 	}
-	return nil, nil
+	return nil
 }
 
 func (cargoProject *CargoProject) ProjectHandler() IProjectHandler {

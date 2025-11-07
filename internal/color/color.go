@@ -12,10 +12,8 @@ var (
 )
 
 // PrintError prints an error message in red
-func PrintError(err error) {
-	if err != nil {
-		Red.Fprintf(color.Output, "%v\n", err)
-	}
+func PrintError(format string, a ...interface{}) {
+	Red.Printf("Error: "+format+"\n", a...)
 }
 
 // PrintWarning prints a warning message in yellow

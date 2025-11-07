@@ -35,12 +35,12 @@ func (composerProject *ComposerProject) Name() string {
 	return "composer"
 }
 
-func (composerProject *ComposerProject) Detect(projectPath string) (IProjectHandler, error) {
+func (composerProject *ComposerProject) Detect(projectPath string) IProjectHandler {
 	composerProjectConfigPath := filepath.Join(projectPath, "composer.json")
 	if _, err := os.Stat(composerProjectConfigPath); err == nil {
-		return &composerProjectHandler{}, nil
+		return &composerProjectHandler{}
 	}
-	return nil, nil
+	return nil
 }
 
 func (composerProject *ComposerProject) ProjectHandler() IProjectHandler {

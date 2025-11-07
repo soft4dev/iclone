@@ -36,12 +36,12 @@ func (npmProject *NpmProject) Name() string {
 	return "npm"
 }
 
-func (npmProject *NpmProject) Detect(projectPath string) (IProjectHandler, error) {
+func (npmProject *NpmProject) Detect(projectPath string) IProjectHandler {
 	npmLockPath := filepath.Join(projectPath, "package-lock.json")
 	if _, err := os.Stat(npmLockPath); err == nil {
-		return npmProjectHandler{}, nil
+		return npmProjectHandler{}
 	}
-	return nil, nil
+	return nil
 }
 
 func (npmProject *NpmProject) ProjectHandler() IProjectHandler {
