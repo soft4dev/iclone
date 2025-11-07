@@ -51,21 +51,22 @@ var rootCmd = &cobra.Command{
 			return fmt.Errorf("error cloning repo: %w", err)
 		}
 
-		projectType := ""
+		var projectHandler projects.ProjectHandler
+		projectDetector := projects.DefaultDetector()
 		if project == "AUTO" {
 			var err error
-			if projectType, err = projects.ProjectDetector(projectDirName); err != nil {
+			if projectHandler, err = projectDetector.FindProjectHandler(projectDirName); err != nil {
 				return err
 			}
 		} else {
-			projectType = strings.ToUpper(project)
+			projectHandler = projectDetector.ProjectHandlerFromName(project)
 		}
-		handler := projects.ProjectHandlers[projectType]
-		if handler == nil {
-			return fmt.Errorf("no handler found for project type '%s'\nAvailable project types: %s", projectType, projects.GetAvailableProjectTypes())
+
+		if projectHandler == nil {
+			return fmt.Errorf("no handler found for project type '%s'\nAvailable project types: %s", project, projectDetector.GetAvailableProjectTypes())
 		}
-		color.PrintSuccess("\n📦 Installing dependencies for %s project...", projectType)
-		if err := handler.Install(projectDirName); err != nil {
+		color.PrintSuccess("\n📦 Installing dependencies for %s project...")
+		if err := projectHandler.Install(projectDirName); err != nil {
 			return err
 		}
 		color.PrintSuccess("✓ Dependencies installed successfully \n")
@@ -76,7 +77,7 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		color.PrintSuccess("project: %s", projectType)
+		color.PrintSuccess("project: %s", project)
 		color.PrintSuccess("url: %s", args[0])
 		return nil
 	},
