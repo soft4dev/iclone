@@ -61,6 +61,10 @@ Just remove the binary at `~/.local/bin/clonei` and done.
 ## Supported Project Types
 
 - **Node.js**: npm, pnpm
+- rust
+- golang
+- php: composer
+- java: maven
 - more to be added...
 
 ## How it works
