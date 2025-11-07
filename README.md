@@ -10,10 +10,15 @@ For macOS / Linux
 curl -fsSL https://raw.githubusercontent.com/soft4dev/clonei/main/scripts/install.sh | sh
 ```
 
-For Windows (PowerShell)
+For Windows [PowerShell](https://learn.microsoft.com/en-us/powershell/)
 
 ```powershell
 irm 'https://raw.githubusercontent.com/soft4dev/clonei/main/scripts/install.ps1' | iex
+```
+For Windows [cmd](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/windows-commands)
+
+```cmd
+powershell -c "irm 'https://raw.githubusercontent.com/soft4dev/clonei/main/scripts/install.ps1' | iex"
 ```
 
 ## Usage
@@ -52,6 +57,7 @@ clonei -p npm https://github.com/username/my-project.git
 1. Clones the specified Git repository
 2. Detects the project type (or uses the specified type)
 3. Automatically installs dependencies based on the project type
+4. Finally cd into the project
 
 ## License
 
