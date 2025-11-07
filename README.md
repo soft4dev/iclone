@@ -15,10 +15,17 @@ For Windows [PowerShell](https://learn.microsoft.com/en-us/powershell/)
 ```powershell
 irm 'https://raw.githubusercontent.com/soft4dev/clonei/main/scripts/install.ps1' | iex
 ```
+
 For Windows [cmd](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/windows-commands)
 
 ```cmd
 powershell -c "irm 'https://raw.githubusercontent.com/soft4dev/clonei/main/scripts/install.ps1' | iex"
+```
+
+## Updating
+
+```bash
+clonei update
 ```
 
 ## Usage
