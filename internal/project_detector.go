@@ -60,5 +60,6 @@ func GetProjectDetector() ProjectDetector {
 	projectDetector.RegisterProject(&projects.PnpmProject{})
 	projectDetector.RegisterProject(&projects.NpmProject{})
 	projectDetector.RegisterProject(&projects.CargoProject{})
+	projectDetector.RegisterProject(&projects.MavenProject{})
 	return projectDetector
 }
