@@ -1,26 +1,33 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
-REPO="soft4dev/clonei"  
-BIN_NAME="clonei"             
+REPO="soft4dev/clonei"
+BIN_NAME="clonei"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Colors (only if stdout is a terminal)
+if [ -t 1 ]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    NC='\033[0m'
+else
+    RED=''
+    GREEN=''
+    YELLOW=''
+    NC=''
+fi
 
-# Detect OS and architecture
+# --- Helper functions ---
 get_os() {
     os=$(uname -s)
     case "$os" in
         Darwin) echo "Darwin" ;;
         Linux) echo "Linux" ;;
-        *) 
-            printf "${RED}Unsupported OS: $os${NC}\n" >&2
-            printf "This script only supports macOS and Linux.\n" >&2
-            printf "For Windows, use: irm https://raw.githubusercontent.com/${REPO}/main/install.ps1 | iex\n" >&2
+        *)
+            printf "${RED}Unsupported OS: %s${NC}\n" "$os" >&2
+            printf "This script supports macOS and Linux only.\n" >&2
+            printf "Windows: irm https://raw.githubusercontent.com/%s/main/install.ps1 | iex\n" "$REPO" >&2
             exit 1
             ;;
     esac
@@ -33,122 +40,130 @@ get_arch() {
         aarch64|arm64) echo "arm64" ;;
         i386|i686) echo "i386" ;;
         armv7l) echo "armv7" ;;
-        *) 
-            printf "${RED}Unsupported architecture: $arch${NC}\n" >&2
+        *)
+            printf "${RED}Unsupported architecture: %s${NC}\n" "$arch" >&2
             exit 1
             ;;
     esac
 }
 
-# Get the latest release version
 get_latest_version() {
-    echo "$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')"
+    curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" |
+        grep -E '"tag_name"|"name"' |
+        head -n1 |
+        sed -E 's/.*"([^"]+)".*/\1/'
 }
 
-# Download and extract the release
+download_file() {
+    url="$1"
+    dest="$2"
+    if command -v curl >/dev/null 2>&1; then
+        curl -fL --retry 3 --progress-bar "$url" -o "$dest"
+    elif command -v wget >/dev/null 2>&1; then
+        wget --tries=3 -q "$url" -O "$dest"
+    else
+        printf "${RED}Error: curl or wget is required${NC}\n" >&2
+        exit 1
+    fi
+}
+
+# --- Main installer ---
 install_binary() {
     os=$(get_os)
     arch=$(get_arch)
     version=$(get_latest_version)
 
     if [ -z "$version" ]; then
-        printf "${RED}Error: Could not fetch latest version${NC}\n" >&2
+        printf "${RED}Error: Could not determine latest release version${NC}\n" >&2
         exit 1
     fi
 
-    printf "${GREEN}Installing ${BIN_NAME} ${version}...${NC}\n"
+    printf "${GREEN}Installing %s %s...${NC}\n" "$BIN_NAME" "$version"
 
-    # Construct download URL
     archive_name="${BIN_NAME}_${os}_${arch}.tar.gz"
     download_url="https://github.com/${REPO}/releases/download/${version}/${archive_name}"
-    
-    # Create temporary directory
+
     tmp_dir=$(mktemp -d)
-    trap "rm -rf $tmp_dir" EXIT
+    trap "rm -rf '$tmp_dir'" EXIT
 
-    printf "${YELLOW}Downloading from ${download_url}...${NC}\n"
+    printf "${YELLOW}Downloading from %s...${NC}\n" "$download_url"
+    download_file "$download_url" "$tmp_dir/$archive_name"
 
-    # Download the archive
-    if command -v curl >/dev/null 2>&1; then
-        curl -fsSL "$download_url" -o "$tmp_dir/$archive_name"
-    elif command -v wget >/dev/null 2>&1; then
-        wget -q "$download_url" -O "$tmp_dir/$archive_name"
-    else
-        printf "${RED}Error: curl or wget is required${NC}\n" >&2
-        exit 1
-    fi
-
-    # Extract the archive
-    printf "${YELLOW}Extracting...${NC}\n"
+    printf "${YELLOW}Extracting archive...${NC}\n"
     tar -xzf "$tmp_dir/$archive_name" -C "$tmp_dir"
 
-    # Determine install directory
-    bin_dir="${BIN_DIR:-$HOME/.local/bin}"
+    # Choose install directory
+    if [ -n "${BIN_DIR:-}" ]; then
+        bin_dir="$BIN_DIR"
+    elif [ -w /usr/local/bin ]; then
+        bin_dir="/usr/local/bin"
+    else
+        bin_dir="$HOME/.local/bin"
+    fi
 
-    # Create bin directory if it doesn't exist
     mkdir -p "$bin_dir"
 
-    # Move binary to install directory
-    printf "${YELLOW}Installing to ${bin_dir}...${NC}\n"
-    mv "$tmp_dir/$BIN_NAME" "$bin_dir/$BIN_NAME"
-    chmod +x "$bin_dir/$BIN_NAME"
+    # Move binary safely
+    target="$bin_dir/$BIN_NAME"
+    if [ -f "$target" ]; then
+        printf "${YELLOW}Warning: %s already exists. Overwrite? [y/N]: ${NC}" "$target"
+        read -r reply
+        case "$reply" in
+            [yY]*) ;;
+            *) printf "${RED}Installation aborted.${NC}\n"; exit 1 ;;
+        esac
+    fi
 
-    printf "${GREEN}✓ ${BIN_NAME} ${version} installed successfully!${NC}\n\n"
+    mv -f "$tmp_dir/$BIN_NAME" "$target"
+    chmod +x "$target"
 
-    # Check if bin_dir is in PATH
+    printf "${GREEN}✓ %s installed to %s${NC}\n" "$BIN_NAME" "$target"
+
+    # PATH setup
     case ":$PATH:" in
         *":$bin_dir:"*) 
-            printf "${GREEN}Run '${BIN_NAME} --help' to get started${NC}\n"
+            printf "${GREEN}PATH already includes %s${NC}\n" "$bin_dir"
             ;;
         *)
-            printf "${YELLOW}Adding ${bin_dir} to PATH...${NC}\n"
-            
-            # Detect shell and profile file
+            printf "${YELLOW}Adding %s to PATH...${NC}\n" "$bin_dir"
             shell_profile=""
-            if [ -n "$BASH_VERSION" ]; then
+            if [ -n "${BASH_VERSION:-}" ]; then
                 shell_profile="$HOME/.bashrc"
-            elif [ -n "$ZSH_VERSION" ]; then
+                [ "$(uname -s)" = "Darwin" ] && shell_profile="$HOME/.bash_profile"
+            elif [ -n "${ZSH_VERSION:-}" ]; then
                 shell_profile="$HOME/.zshrc"
-            elif [ -n "$FISH_VERSION" ]; then
+            elif [ -n "${FISH_VERSION:-}" ]; then
                 shell_profile="$HOME/.config/fish/config.fish"
             else
-                # Try to detect from SHELL environment variable
-                case "$SHELL" in
+                case "${SHELL:-}" in
                     */bash) shell_profile="$HOME/.bashrc" ;;
-                    */zsh) shell_profile="$HOME/.zshrc" ;;
+                    */zsh)  shell_profile="$HOME/.zshrc" ;;
                     */fish) shell_profile="$HOME/.config/fish/config.fish" ;;
-                    *) shell_profile="$HOME/.profile" ;;
+                    *)      shell_profile="$HOME/.profile" ;;
                 esac
             fi
 
-            # Add to PATH in shell profile
             if [ -n "$shell_profile" ]; then
-                # Check if PATH export already exists in profile
-                if ! grep -q "export PATH=.*${bin_dir}" "$shell_profile" 2>/dev/null; then
-                    echo "" >> "$shell_profile"
-                    echo "# Added by ${BIN_NAME} installer" >> "$shell_profile"
-                    echo "export PATH=\"\$PATH:${bin_dir}\"" >> "$shell_profile"
-                    printf "${GREEN}✓ Added to ${shell_profile}${NC}\n"
-                    
-                    # Source the profile to apply changes immediately
-                    if [ -f "$shell_profile" ]; then
-                        # shellcheck disable=SC1090
-                        . "$shell_profile" 2>/dev/null || true
-                        printf "${GREEN}✓ PATH updated in current session${NC}\n"
-                    fi
+                mkdir -p "$(dirname "$shell_profile")"
+                if ! grep -qs "$bin_dir" "$shell_profile"; then
+                    {
+                        echo ""
+                        echo "# Added by ${BIN_NAME} installer"
+                        echo "export PATH=\"$bin_dir:\$PATH\""
+                    } >> "$shell_profile"
+                    printf "${GREEN}✓ Added to %s${NC}\n" "$shell_profile"
                 else
-                    printf "${YELLOW}PATH already configured in ${shell_profile}${NC}\n"
+                    printf "${YELLOW}PATH already configured in %s${NC}\n" "$shell_profile"
                 fi
             fi
 
-            # Export PATH for current session as fallback
-            export PATH="$PATH:${bin_dir}"
-            
-            printf "\n${GREEN}Run '${BIN_NAME} --help' to get started${NC}\n"
-            printf "${YELLOW}Note: You may need to restart other terminal sessions${NC}\n"
+            export PATH="$bin_dir:$PATH"
             ;;
     esac
+
+    printf "\n${GREEN}✅ Installation complete!${NC}\n"
+    printf "Run: ${YELLOW}%s --help${NC}\n" "$BIN_NAME"
+    printf "You may need to restart your terminal.\n"
 }
 
-# Main execution
 install_binary
