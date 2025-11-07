@@ -80,7 +80,7 @@ var rootCmd = &cobra.Command{
 			return customErrors.NewCustomError(fmt.Sprintf("no handler found for project type '%s'\nAvailable project types: %s", projectType, projectDetector.GetAvailableProjects()), customErrors.ErrorTypeWarning, false)
 		}
 
-		color.PrintSuccess("\n📦 Installing dependencies for %s project...")
+		color.PrintSuccess("\n📦 Installing dependencies")
 		if err := projectHandler.Install(projectDirName); err != nil {
 			return customErrors.NewCustomError(fmt.Sprintf("failed to install dependencies: %s", err), customErrors.ErrorTypeWarning, false)
 		}
